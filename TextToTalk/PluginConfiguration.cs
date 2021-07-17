@@ -105,6 +105,8 @@ namespace TextToTalk
 
         public int PollyPlaybackRate { get; set; } = 100;
 
+        public List<string> PollyLexicons { get; set; }
+
         public bool CancelQueueOnToggle { get; set; } = false;
         public string SaysPostfix { get; set; } = "says";
 
@@ -141,6 +143,16 @@ namespace TextToTalk
 
             EnabledChatTypesPresets ??= new List<EnabledChatTypesPreset>();
             VoicePresets ??= new List<VoicePreset>();
+
+            PollyLexicons ??= new List<string>();
+            if (PollyLexicons.Count < 5)
+            {
+                for (var i = 0; i <= 5 - PollyLexicons.Count; i++)
+                {
+                    PollyLexicons.Add("");
+                }
+            }
+
             Replacers ??= new List<TextReplacer>() { new TextReplacer() { ChatText = "ul'dah", ReplaceWith = "uldaahr" } };
             if (!InitializedEver)
             {
