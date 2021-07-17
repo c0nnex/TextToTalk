@@ -1,5 +1,5 @@
 ﻿name: TextToTalk
-author: karashiiro
-description: Chat TTS. Use /tttconfig to configure the enabled channels and triggers/exceptions.
-repo_url: https://github.com/karashiiro/TextToTalk
+author: c0nnex,karashiiro
+description: Chat TTS c0nnex Fork. Use /tttconfig to configure the enabled channels and triggers/exceptions.
+repo_url: https://github.com/c0nnex/TextToTalk
 tags: [ "tts", "trigger", "triggers", "voice", "voices", "speech", "karashiiro" ]

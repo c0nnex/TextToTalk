@@ -340,3 +340,4 @@ ASALocalRun/
 healthchecksdb
 
 FodyWeavers.xsd
+/TextToTalk/Properties/launchSettings.json

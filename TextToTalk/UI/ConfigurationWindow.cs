@@ -372,7 +372,7 @@ namespace TextToTalk.UI
                 var strReplace = listItems[i].ReplaceWith;
                 if (ImGui.InputText($"###TextToTalkReplacers_R{i}", ref strReplace, 100))
                 {
-                    listItems[i].ReplaceWith = strChat;
+                    listItems[i].ReplaceWith = strReplace;
                     Configuration.Save();
                 }
                 ImGui.TableNextColumn();
