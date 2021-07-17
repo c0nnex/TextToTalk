@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Dalamud.Data;
 using Dalamud.Game.Text.SeStringHandling;
@@ -50,6 +51,11 @@ namespace TextToTalk.Talk
                 // TextToTalk#29 emdashes
                 .Replace("─", " - ") // I don't think these are the same character, but they're both used
                 .Replace("—", " - ");
-        }       
+        }
+
+        public static T Pipe<T>(T input, params Func<T, T>[] transforms)
+        {
+            return transforms.Aggregate(input, (agg, next) => next(agg));
+        }
     }
 }

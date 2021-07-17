@@ -1,7 +1,9 @@
 ﻿using Dalamud.CrystalTower.Commands.Attributes;
 using Dalamud.CrystalTower.UI;
 using Dalamud.Plugin;
+using System.Text.RegularExpressions;
 using TextToTalk.Backends;
+using TextToTalk.Talk;
 using TextToTalk.UI;
 
 namespace TextToTalk.Modules
@@ -26,7 +28,9 @@ namespace TextToTalk.Modules
         public void ToggleTts(string command = "", string args = "")
         {
             if (Config.Enabled)
+            {
                 DisableTts();
+            }
             else
                 EnableTts();
         }
@@ -36,6 +40,8 @@ namespace TextToTalk.Modules
         public void DisableTts(string command = "", string args = "")
         {
             Config.Enabled = false;
+            if (Config.CancelQueueOnToggle)
+                BackendManager.CancelSay();
             State.LastSpeaker = "";
             State.LastQuestText = "";
             var chat = PluginInterface.Framework.Gui.Chat;
@@ -59,5 +65,19 @@ namespace TextToTalk.Modules
         {
             Windows.ToggleWindow<ConfigurationWindow>();
         }
+
+        [Command("/tttsay")]
+        [HelpMessage("Speak a text")]
+        public void Speaktext(string command, string args)
+        {
+            var cleanText = TalkUtils.Pipe(
+                args,
+                TalkUtils.StripSSMLTokens,
+                TalkUtils.NormalizePunctuation);
+            Config.Replacers.ForEach(vr => cleanText = Regex.Replace(cleanText, vr.ChatText, vr.ReplaceWith, RegexOptions.IgnoreCase));
+            BackendManager.Say(GameEnums.Gender.Male, cleanText);
+        }
+
+        
     }
 }

@@ -33,9 +33,8 @@ namespace TextToTalk.UI
             ImGui.PushStyleColor(ImGuiCol.TitleBgActive, titleBarColor != default
                 ? titleBarColor
                 : ImGui.ColorConvertU32ToFloat4(ImGui.GetColorU32(ImGuiCol.TitleBgActive)));
-
-            ImGui.SetNextWindowSize(new Vector2(520, 480));
-            ImGui.Begin("TextToTalk Configuration", ref visible, ImGuiWindowFlags.NoResize);
+            ImGui.SetNextWindowSize(new Vector2(800, 600), ImGuiCond.FirstUseEver);
+            ImGui.Begin("TextToTalk Configuration", ref visible);
             {
                 if (ImGui.BeginTabBar("TextToTalk##tabbar"))
                 {
@@ -56,6 +55,17 @@ namespace TextToTalk.UI
                         DrawTriggersExclusions();
                         ImGui.EndTabItem();
                     }
+
+                    if (ImGui.BeginTabItem("Replacer"))
+                    {
+                        DrawReplacers();
+                        ImGui.EndTabItem();
+                    }
+                    if (ImGui.BeginTabItem("Settings"))
+                    {
+                        DrawSettings();
+                        ImGui.EndTabItem();
+                    }
                 }
 
                 ImGui.EndTabBar();
@@ -63,6 +73,27 @@ namespace TextToTalk.UI
             ImGui.End();
 
             ImGui.PopStyleColor();
+        }
+
+        private void DrawSettings()
+        {
+            var cancelQueue = Configuration.CancelQueueOnToggle;
+            if (ImGui.Checkbox("Cancel Queue on Toggle", ref cancelQueue))
+            {
+                Configuration.CancelQueueOnToggle = cancelQueue;
+                Configuration.Save();
+            }
+            var str = Configuration.SaysPostfix;
+            if (ImGui.InputText($"'says' text", ref str, 100))
+            {
+                Configuration.SaysPostfix = str;
+                Configuration.Save();
+            }
+            var debugLog = Configuration.Debug;
+            if (ImGui.Checkbox("Debug Logging", ref debugLog))
+            {
+                Configuration.Debug = debugLog;
+            }
         }
 
         private void DrawSynthesizerSettings()
@@ -155,6 +186,7 @@ namespace TextToTalk.UI
                     }
                 }
             }
+
         }
 
         private void DrawChannelSettings()
@@ -314,6 +346,60 @@ namespace TextToTalk.UI
             {
                 listItems.Add(new Trigger());
             }
+        }
+
+        private void DrawReplacers()
+        {
+            ImGui.BeginTable("###Replacers", 4);
+            ImGui.TableSetupColumn("Old Text");
+            ImGui.TableSetupColumn("New Text");
+            ImGui.TableSetupColumn("SSML");
+
+            ImGui.TableHeadersRow();
+
+            var listItems = Configuration.Replacers;
+            for (var i = 0; i < listItems.Count; i++)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                var strChat = listItems[i].ChatText;
+                if (ImGui.InputText($"###TextToTalkReplacers_C{i}", ref strChat, 100))
+                {
+                    listItems[i].ChatText = strChat;
+                    Configuration.Save();
+                }
+                ImGui.TableNextColumn();
+                var strReplace = listItems[i].ReplaceWith;
+                if (ImGui.InputText($"###TextToTalkReplacers_R{i}", ref strReplace, 100))
+                {
+                    listItems[i].ReplaceWith = strChat;
+                    Configuration.Save();
+                }
+                ImGui.TableNextColumn();
+                // SSML --- not yet
+                var useSSML = listItems[i].UseSSML;
+                if (ImGui.Checkbox($"Regex###TextToTalkReplacers_S{i}", ref useSSML))
+                {
+                    listItems[i].UseSSML = useSSML;
+                    Configuration.Save();
+                }
+                ImGui.TableNextColumn(); // Commands
+                if (ImGui.Button($"Remove###TextToTalkReplacers_B{i}"))
+                {
+                    listItems[i].ShouldRemove = true;
+                }
+            }
+
+            ImGui.EndTable();
+
+            if (ImGui.Button($"Add new Row"))
+            {
+                listItems.Add(new TextReplacer());
+            }
+            listItems.RemoveAll(vr => vr.ShouldRemove);
+
+
+
         }
     }
 }

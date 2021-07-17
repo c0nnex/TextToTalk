@@ -105,6 +105,12 @@ namespace TextToTalk
 
         public int PollyPlaybackRate { get; set; } = 100;
 
+        public bool CancelQueueOnToggle { get; set; } = false;
+        public string SaysPostfix { get; set; } = "says";
+
+        public List<TextReplacer> Replacers { get; set; }
+
+
         [JsonIgnore]
         public bool InitializedEver
         {
@@ -113,9 +119,11 @@ namespace TextToTalk
             set => FirstTime = value;
 #pragma warning restore 618
         }
+        [JsonIgnore]
+        public bool Debug { get; set; } = false;
 
         [JsonIgnore] private DalamudPluginInterface pluginInterface;
-
+        
         public PluginConfiguration()
         {
             Enabled = true;
@@ -133,7 +141,7 @@ namespace TextToTalk
 
             EnabledChatTypesPresets ??= new List<EnabledChatTypesPreset>();
             VoicePresets ??= new List<VoicePreset>();
-
+            Replacers ??= new List<TextReplacer>() { new TextReplacer() { ChatText = "ul'dah", ReplaceWith = "uldaahr" } };
             if (!InitializedEver)
             {
                 EnabledChatTypesPresets.Add(new EnabledChatTypesPreset
@@ -163,7 +171,6 @@ namespace TextToTalk
                     VoiceName = ss.GetInstalledVoices().First().VoiceInfo.Name,
                     Name = DefaultPreset,
                 });
-
                 InitializedEver = true;
                 MigratedTo1_5 = true;
                 MigratedTo1_6 = true;
@@ -180,7 +187,7 @@ namespace TextToTalk
                     }
                 }
             }
-
+            Replacers.RemoveAll(vr => String.IsNullOrEmpty(vr.ChatText));
             Save();
         }
 

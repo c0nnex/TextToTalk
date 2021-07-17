@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Text.RegularExpressions;
 
 namespace TextToTalk
@@ -27,5 +28,15 @@ namespace TextToTalk
                 return false;
             }
         }
+    }
+
+    public class TextReplacer
+    {
+        public string ChatText { get; set; } = "";
+        public string ReplaceWith { get; set; } = "";
+        public bool UseSSML { get; set; } = false;
+
+        [JsonIgnore]
+        public bool ShouldRemove { get; set; }
     }
 }

@@ -11,6 +11,7 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using TextToTalk.Backends;
 using TextToTalk.GameEnums;
 using TextToTalk.Modules;
@@ -134,7 +135,7 @@ namespace TextToTalk
             {
                 if (!this.config.DisallowMultipleSay || !IsSameSpeaker(talkAddonText.Speaker))
                 {
-                    text = $"{talkAddonText.Speaker} says {text}";
+                    text = $"{talkAddonText.Speaker} {config.SaysPostfix} {text}";
                     SetLastSpeaker(talkAddonText.Speaker);
                 }
             }
@@ -166,28 +167,12 @@ namespace TextToTalk
             if (!this.config.Enabled) return;
 
             var textValue = message.TextValue;
+            var senderText = sender?.TextValue; // Can't access in lambda
+
             if (IsDuplicateQuestText(textValue)) return;
 
-#if DEBUG
-            PluginLog.Log("Chat message from type {0}: {1}", type, textValue);
-#endif
-
-            if (sender != null && sender.TextValue != string.Empty)
-            {
-                if (ShouldSaySender(type))
-                {
-                    if (!this.config.DisallowMultipleSay || !IsSameSpeaker(sender.TextValue))
-                    {
-                        if ((int)type == (int)AdditionalChatType.NPCDialogue)
-                        {
-                            SetLastQuestText(textValue);
-                        }
-
-                        textValue = $"{sender.TextValue} says {textValue}";
-                        SetLastSpeaker(sender.TextValue);
-                    }
-                }
-            }
+            if (config.Debug)
+                PluginLog.Log($"CHATMSG {type}/{(int)type} ({sender?.TextValue}): '{textValue}'");
 
             if (this.config.Bad.Where(t => t.Text != "").Any(t => t.Match(textValue))) return;
 
@@ -199,7 +184,23 @@ namespace TextToTalk
                 .Any(t => t.Match(textValue));
             if (!(chatTypes.EnableAllChatTypes || typeAccepted) || this.config.Good.Count > 0 && !goodMatch) return;
 
-            var senderText = sender?.TextValue; // Can't access in lambda
+            if (!String.IsNullOrEmpty(senderText))
+            {
+                if (ShouldSaySender(type))
+                {
+                    if (!this.config.DisallowMultipleSay || !IsSameSpeaker(sender.TextValue))
+                    {
+                        if ((int)type == (int)AdditionalChatType.NPCDialogue)
+                        {
+                            SetLastQuestText(textValue);
+                        }
+
+                        textValue = $"{senderText} {config.SaysPostfix} {textValue}";
+                        SetLastSpeaker(senderText);
+                    }
+                }
+            }
+            
             var speaker = this.pluginInterface.ClientState.Actors
                 .FirstOrDefault(a => a.Name == senderText);
 
@@ -208,11 +209,15 @@ namespace TextToTalk
 
         private void Say(Actor speaker, string textValue)
         {
-            var cleanText = Pipe(
+            var cleanText = TalkUtils.Pipe(
                 textValue,
                 TalkUtils.StripSSMLTokens,
                 TalkUtils.NormalizePunctuation);
+            config.Replacers.ForEach(vr => cleanText = Regex.Replace(cleanText, vr.ChatText, vr.ReplaceWith, RegexOptions.IgnoreCase));
+
             var gender = this.config.UseGenderedVoicePresets ? GetActorGender(speaker) : Gender.None;
+            if (config.Debug)
+                PluginLog.Log($"CHATPARSED {gender} '{cleanText}'");
             this.backendManager.Say(gender, cleanText);
         }
 
@@ -269,10 +274,7 @@ namespace TextToTalk
             return this.config.EnableNameWithSay && (this.config.NameNpcWithSay || (int)type != (int)AdditionalChatType.NPCDialogue);
         }
 
-        private static T Pipe<T>(T input, params Func<T, T>[] transforms)
-        {
-            return transforms.Aggregate(input, (agg, next) => next(agg));
-        }
+        
 
         #region IDisposable Support
         protected virtual void Dispose(bool disposing)
