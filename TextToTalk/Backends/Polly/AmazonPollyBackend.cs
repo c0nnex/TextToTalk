@@ -33,40 +33,48 @@ namespace TextToTalk.Backends.Polly
         private FileDialog pollyLexiconFileDialog;
         private IList<Voice> voices;
         private IList<LexiconDescription> cloudLexicons;
-
+        private object lexiconLock = new object();
         private string accessKey = string.Empty;
         private string secretKey = string.Empty;
 
         public AmazonPollyBackend(PluginConfiguration config)
         {
-            this.config = config;
-
-            TitleBarColor = ImGui.ColorConvertU32ToFloat4(0xFF0099FF);
-
-            var credentials = CredentialManager.GetCredentials(CredentialsTarget);
-
-            if (credentials != null)
+            try
             {
-                this.accessKey = credentials.UserName;
-                this.secretKey = credentials.Password;
-                this.polly = new PollyClient(credentials.UserName, credentials.Password, RegionEndpoint.EUWest1);
-                this.voices = this.polly.GetVoicesForEngine(this.config.PollyEngine);
-                this.cloudLexicons = this.polly.GetLexicons();
-            }
-            else
-            {
-                this.voices = new List<Voice>();
-                this.cloudLexicons = new List<LexiconDescription>();
-            }
+                this.config = config;
 
-            // Poll the lexicon list for updates since it is eventually-consistent
-            this.lexiconUpdateAction = new RepeatingAction(() =>
-            {
-                lock (this.cloudLexicons)
+                TitleBarColor = ImGui.ColorConvertU32ToFloat4(0xFF0099FF);
+
+                var credentials = CredentialManager.GetCredentials(CredentialsTarget);
+
+                if (credentials != null)
                 {
+                    this.accessKey = credentials.UserName;
+                    this.secretKey = credentials.Password;
+                    this.polly = new PollyClient(credentials.UserName, credentials.Password, RegionEndpoint.EUWest1);
+                    this.voices = this.polly.GetVoicesForEngine(this.config.PollyEngine);
                     this.cloudLexicons = this.polly.GetLexicons();
                 }
-            }, new TimeSpan(0, 0, 5));
+                else
+                {
+                    this.voices = new List<Voice>();
+                    this.cloudLexicons = new List<LexiconDescription>();
+                }
+
+                // Poll the lexicon list for updates since it is eventually-consistent
+                this.lexiconUpdateAction = new RepeatingAction(() =>
+                {
+                    lock (lexiconLock)
+                    {
+                        if (polly != null)
+                            this.cloudLexicons = this.polly.GetLexicons();
+                    }
+                }, new TimeSpan(0, 0, 5));
+            }
+            catch (Exception ex)
+            {
+                PluginLog.Log(ex.ToString());
+            }
         }
 
         public override void Say(Gender gender, string text)
@@ -148,9 +156,10 @@ namespace TextToTalk.Backends.Polly
                     this.polly = new PollyClient(this.accessKey, this.secretKey, regionEndpoint);
 
                     this.voices = this.polly.GetVoicesForEngine(this.config.PollyEngine);
-                    lock (this.cloudLexicons)
+                    lock (lexiconLock)
                     {
-                        this.cloudLexicons = this.polly.GetLexicons();
+                        if (polly != null)
+                            this.cloudLexicons = this.polly.GetLexicons();
                     }
                 }
             }
@@ -194,7 +203,7 @@ namespace TextToTalk.Backends.Polly
             }
 
             ImGui.Text("Lexicons");
-            lock (this.cloudLexicons)
+            lock (lexiconLock)
             {
                 var setLexicons = this.config.PollyLexicons.ToArray();
                 var cloudLexiconNames = this.cloudLexicons.Select(l => l.Name).ToArray();
