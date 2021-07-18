@@ -39,6 +39,16 @@ namespace TextToTalk.Backends.Polly
             return lexicons;
         }
 
+        public Lexicon GetLexicon(string lexiconName)
+        {
+            var lexicon = this.client.GetLexicon(new GetLexiconRequest
+            {
+                Name = lexiconName,
+            });
+
+            return lexicon.Lexicon;
+        }
+
         public void UploadLexicon(string lexiconFilePath)
         {
             var content = File.ReadAllText(lexiconFilePath);
@@ -48,6 +58,14 @@ namespace TextToTalk.Backends.Polly
             {
                 Content = content,
                 Name = name,
+            });
+        }
+
+        public void DeleteLexicon(string lexiconName)
+        {
+            this.client.DeleteLexicon(new DeleteLexiconRequest
+            {
+                Name = lexiconName,
             });
         }
 

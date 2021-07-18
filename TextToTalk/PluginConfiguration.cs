@@ -87,6 +87,8 @@ namespace TextToTalk
 
         public int FemaleVoicePresetId { get; set; }
 
+        public IList<string> Lexicons { get; set; }
+
         public string PollyVoice { get; set; }
 
         public string PollyVoiceUngendered { get; set; }
@@ -152,6 +154,8 @@ namespace TextToTalk
                     PollyLexicons.Add("");
                 }
             }
+
+            Lexicons ??= new List<string>();
 
             Replacers ??= new List<TextReplacer>() { new TextReplacer() { ChatText = "ul'dah", ReplaceWith = "uldaahr" } };
             if (!InitializedEver)
